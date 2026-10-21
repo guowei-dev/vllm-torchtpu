@@ -123,3 +123,5 @@ Developer references: [Testing & CI](https://vllm-torchtpu.readthedocs.io/en/lat
 - For technical questions and feature requests, open a [GitHub issue](https://github.com/vllm-project/vllm-torchtpu/issues).
 - For discussion with fellow users, use the [TPU support topic on the vLLM Forum](https://discuss.vllm.ai/c/hardware-support/google-tpu-support/27).
 - For coordinating contributions and development, join the [vLLM Developer Slack](https://slack.vllm.ai) (`#sig-tpu`).
+
+[just test]
