@@ -88,13 +88,15 @@ k3r_client_profile() {
   timeout 120 bash -c 'until curl -sf -o /dev/null http://127.0.0.1:8100/health; do sleep 2; done' \
     || { k3r_log "the router did not come up"; kill "$router_pid" 2>/dev/null; return 1; }
   # The measured run's own aiperf command, shortened, into its own directory. Under the
-  # scenario's 900 s minimum, which AIPERF_UNSAFE_OVERRIDE allows.
+  # scenario's 900 s minimum, which only the --unsafe-override flag allows (aiperf 89b2186
+  # ignores AIPERF_UNSAFE_OVERRIDE); the load is not a measurement.
   local load
   load=$(sed -E -e 's/--benchmark-duration [0-9]+/--benchmark-duration '"$K3R_LOAD_SECONDS"'/' \
       -e 's/--warmup-requests-per-lane [0-9]+/--warmup-requests-per-lane 1/' \
       -e 's/--warmup-grace-period [0-9]+/--warmup-grace-period 300/' \
       -e 's#--output-artifact-dir [^ ]+#--output-artifact-dir '"$RESULT_DIR"'/profile_load/aiperf#' \
       -e 's#--server-metrics( [^ -][^ ]*)+##' "$cmdf")
+  load="$load --unsafe-override"
   echo "$load" > "$RESULT_DIR/profile_load/command.txt"
   (
     ix=/tmp/.agentx_scratch/InferenceX/inferencex-e2e
