@@ -17,7 +17,8 @@
 
 Reads aiperf's profile_export_aiperf.json and server_metrics_export.csv for the
 point's one concurrency and writes <out>/k3r_metrics.json and
-<out>/cdk_result.json (the job's published metrics). The doc's definitions:
+<out>/cdk_result.json (the job's published metrics) and <out>/cdk_points.jsonl
+(its point for `nexus cdk dash`). The doc's definitions:
 P90 interactivity is 1000 / P90 inter_token_latency (ms); total tok/s is
 total_token_throughput; per chip divides by the 32 chips; the chip and CPU
 cache hit rates are the PREFILL's prefix_cache_hits and
@@ -102,8 +103,11 @@ def main() -> int:
             m["decode_acceptance_length"] = 1 + c.get(("decode", "vllm:spec_decode_num_accepted_tokens"), 0) / drafts
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "k3r_metrics.json").write_text(json.dumps(m, indent=2) + "\n")
-    (a.out / "cdk_result.json").write_text(json.dumps(
-        {k: v for k, v in m.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}, indent=2) + "\n")
+    numeric = {k: v for k, v in m.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    (a.out / "cdk_result.json").write_text(json.dumps(numeric, indent=2) + "\n")
+    # The run's point for `nexus cdk dash` (one sheet for the whole study).
+    (a.out / "cdk_points.jsonl").write_text(json.dumps(
+        {"sheet": "k3-1016-repro", "bench": a.point, "metrics": numeric}) + "\n")
     print(json.dumps(m, indent=2))
     return 0
 
