@@ -21,9 +21,9 @@
 #   client   replays the point's AgentX trace for K3R_LOAD_SECONDS, POSTs
 #            /start_profile to both heads after K3R_PROFILE_AFTER s, /stop_profile
 #            K3R_PROFILE_SECONDS later (it returns once every rank has written),
-#            then writes result/PROFILE_STOPPED holding a token
-#   engine   on that token copies its ranks' traces to result/profile/ and writes
-#            result/PROFILE_UPLOADED holding the same token
+#            then writes result/PROFILE_STOPPED holding a token `<point>@<pod>-<time>`
+#   engine   on that token copies its ranks' traces to result/profile/<point>/ and
+#            writes result/PROFILE_UPLOADED holding the same token
 #   client   waits for all eight engines' PROFILE_UPLOADED (K3R_UPLOAD_WAIT s)
 
 : "${K3R_LOAD_SECONDS:=300}" "${K3R_PROFILE_AFTER:=150}" "${K3R_PROFILE_SECONDS:=5}"
@@ -45,11 +45,13 @@ k3r_engine_profile_watch() {
     [ -n "$marker" ] || continue
     token=$(cat "$marker" 2>/dev/null) || continue
     [ -n "$token" ] && [ "$token" != "$done_tok" ] || continue
-    k3r_log "profile stopped (token $token); copying $K3R_PROFILE_DIR"
-    mkdir -p "$RESULT_DIR/profile"
-    if cp -r "$K3R_PROFILE_DIR/." "$RESULT_DIR/profile/"; then
+    local dest="$RESULT_DIR/profile"
+    case "$token" in *@*) dest="$dest/${token%%@*}" ;; esac
+    k3r_log "profile stopped (token $token); copying $K3R_PROFILE_DIR to $dest"
+    mkdir -p "$dest"
+    if cp -r "$K3R_PROFILE_DIR/." "$dest/"; then
       find "$RESULT_DIR/profile" -type f -printf '%s %P\n' > "$RESULT_DIR/profile_files.txt"
-      k3r_log "copied $(wc -l < "$RESULT_DIR/profile_files.txt") files"
+      k3r_log "copied $(find "$dest" -type f | wc -l) files"
     else
       k3r_log "ERROR: copying the traces failed"
     fi
@@ -63,15 +65,15 @@ k3r_post() {
   curl -s -o /dev/null -w '%{http_code}' --max-time 1200 -X POST "$1" || echo "curl-failed"
 }
 
-# k3r_client_profile <point>: the load, the capture, the wait for the uploads.
+# k3r_client_profile <point> [<out dir>]: the load, the capture, the wait for the uploads.
 k3r_client_profile() {
-  local point="$1" res="$ARTIFACTS_DIR/k3-agentx-1p1d" cmdf prefill decode token root
+  local point="$1" out="${2:-$RESULT_DIR}" res="$ARTIFACTS_DIR/k3-agentx-1p1d" cmdf prefill decode token root
   local prefill_url decode_url router_pid="" load_pid="" n up rc=0
   prefill="${JS_NAME}-prefill-0-0.${JS_NAME}"
   decode="${JS_NAME}-decode-0-0.${JS_NAME}"
   prefill_url="http://${prefill}:8000"
   decode_url="http://${decode}:8000"
-  mkdir -p "$RESULT_DIR/profile_load"
+  mkdir -p "$out/profile_load"
   cmdf=$(ls "$res"/conc_*/benchmark_command.txt 2>/dev/null | head -n 1)
   [ -n "$cmdf" ] || { k3r_log "no benchmark_command.txt under $res; no profile"; return 1; }
   for u in "$prefill_url" "$decode_url"; do
@@ -83,7 +85,7 @@ k3r_client_profile() {
     --prefill "$prefill_url" --decode "$decode_url" --policy consistent_hash \
     --request-timeout-secs 5000 --worker-startup-timeout-secs 300 \
     --health-check-interval-secs 30 --disable-retries \
-    > "$RESULT_DIR/profile_load/router.log" 2>&1 &
+    > "$out/profile_load/router.log" 2>&1 &
   router_pid=$!
   timeout 120 bash -c 'until curl -sf -o /dev/null http://127.0.0.1:8100/health; do sleep 2; done' \
     || { k3r_log "the router did not come up"; kill "$router_pid" 2>/dev/null; return 1; }
@@ -94,10 +96,10 @@ k3r_client_profile() {
   load=$(sed -E -e 's/--benchmark-duration [0-9]+/--benchmark-duration '"$K3R_LOAD_SECONDS"'/' \
       -e 's/--warmup-requests-per-lane [0-9]+/--warmup-requests-per-lane 1/' \
       -e 's/--warmup-grace-period [0-9]+/--warmup-grace-period 300/' \
-      -e 's#--output-artifact-dir [^ ]+#--output-artifact-dir '"$RESULT_DIR"'/profile_load/aiperf#' \
+      -e 's#--output-artifact-dir [^ ]+#--output-artifact-dir '"$out"'/profile_load/aiperf#' \
       -e 's#--server-metrics( [^ -][^ ]*)+##' "$cmdf")
   load="$load --unsafe-override"
-  echo "$load" > "$RESULT_DIR/profile_load/command.txt"
+  echo "$load" > "$out/profile_load/command.txt"
   (
     ix=/tmp/.agentx_scratch/InferenceX/inferencex-e2e
     # shellcheck disable=SC1091
@@ -108,13 +110,13 @@ k3r_client_profile() {
     export TMPDIR=/tmp/k3r-load
     mkdir -p "$TMPDIR"
     exec bash -c "$load"
-  ) > "$RESULT_DIR/profile_load/aiperf.log" 2>&1 &
+  ) > "$out/profile_load/aiperf.log" 2>&1 &
   load_pid=$!
   k3r_log "load started (pid $load_pid): $load"
   sleep "$K3R_PROFILE_AFTER"
   if ! kill -0 "$load_pid" 2>/dev/null; then
     k3r_log "the load exited early; see profile_load/aiperf.log"
-    tail -20 "$RESULT_DIR/profile_load/aiperf.log"
+    tail -20 "$out/profile_load/aiperf.log"
     rc=1
   else
     # Both roles at once: a request in flight crosses both.
@@ -134,7 +136,7 @@ k3r_client_profile() {
   pkill -TERM -f "aiperf" 2>/dev/null; sleep 15; pkill -KILL -f "aiperf" 2>/dev/null
   kill "$load_pid" "$router_pid" 2>/dev/null
   [ "$rc" = 0 ] || return "$rc"
-  token="${HOSTNAME:-client}-$(date +%s)"
+  token="${point}@${HOSTNAME:-client}-$(date +%s)"
   echo "$token" > "$RESULT_DIR/PROFILE_STOPPED"
   root="$(k3r_outputs_root)"
   local deadline=$((SECONDS + K3R_UPLOAD_WAIT))
