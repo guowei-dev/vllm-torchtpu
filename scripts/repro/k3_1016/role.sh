@@ -64,6 +64,24 @@ point_done_marker() {
   find "$(k3r_outputs_root)" -path "*-client-0/*/result/points/$1/POINT_DONE" -newer "$STAMP" 2>/dev/null | head -n 1
 }
 
+# earlier_ok <point>: an EARLIER attempt's client dir (a preemption retry keeps the job id, so
+# its dirs sit beside ours) that finished <point> green (POINT_OK); both roles skip such a point.
+# The client tells earlier attempts by path, an engine by the marker predating its own start.
+earlier_ok() {
+  local f
+  for f in "$(k3r_outputs_root)"/*-client-0/*/*/result/points/"$1"/POINT_OK; do
+    [ -f "$f" ] || continue
+    if [ "$ROLE" = client ]; then
+      case "$f" in "$RESULT_DIR"/*) continue ;; esac
+    elif [ "$f" -nt "$STAMP" ]; then
+      continue
+    fi
+    dirname "$f"
+    return 0
+  done
+  return 1
+}
+
 # heads_state: "up" when both heads answer /health, "down" when neither does.
 heads_state() {
   local p d
@@ -99,6 +117,7 @@ case "$ROLE" in
     fi
     STAMP=$(mktemp)
     for p in "${POINTS[@]}"; do
+      if earlier_ok "$p" >/dev/null; then log "an earlier attempt finished $p; skipping it"; continue; fi
       export K3_PD_CONFIG="k3-repro-1016/${p}"
       log "starting $ROLE for $p"
       setsid $ENGINE_CMD "$ROLE" &
@@ -142,6 +161,11 @@ case "$ROLE" in
       [ "$MULTI" = 0 ] || out="$RESULT_DIR/points/$p"
       mkdir -p "$out"
       export ARTIFACTS_DIR="$out/perf_eval_results"
+      if [ "$MULTI" = 1 ] && prev=$(earlier_ok "$p"); then
+        log "an earlier attempt finished $p green ($prev); keeping its results"
+        cp -r "$prev/." "$out/" && echo "$prev" > "$out/RESUMED_FROM"
+        continue
+      fi
       if [ "$first" = 0 ]; then
         # The previous point's servers must be gone first, or the client would measure them.
         log "waiting for the previous point's servers to stop"
@@ -160,6 +184,7 @@ case "$ROLE" in
       python3 "$HERE/extract.py" --point "$p" --results "$ARTIFACTS_DIR/k3-agentx-1p1d" --out "$out" \
         || { log "extract.py failed for $p"; [ "$rc" -ne 0 ] || rc=1; }
       [ "$rc" = 0 ] || rc_all=$rc
+      [ "$rc" != 0 ] || date -u +%FT%TZ > "$out/POINT_OK"
       date -u +%FT%TZ > "$out/POINT_DONE"
       # A point whose servers failed leaves nothing to measure the next point on.
       [ "$rc" = 0 ] || [ "$MULTI" = 0 ] || { log "stopping the batch after $p"; break; }
