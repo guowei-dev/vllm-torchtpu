@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# One pod of a Kimi-K3 Oct 16 recipe point on a dev_nexus `nexus-pd` JobSet:
+# One pod of a Kimi-K3 Oct 16 recipe point on a dev_nexus `serve-pd-bench` JobSet (`--pd`):
 # the role's half of main's AgentX 1P1D lane (kimi-k3-agentx-1p1d.yaml), with
 # the environment that manifest gives its containers set here instead.
 #
@@ -30,8 +30,10 @@ REPO_DIR="$(cd "$HERE/../../.." && pwd)"
 export REPO_DIR
 POINT="${1:?usage: role.sh <point, e.g. p3-c8> [duration]}"
 DURATION="${2:-}"
-ROLE="${NEXUS_ROLE:?the nexus-pd recipe sets NEXUS_ROLE}"
+ROLE="${NEXUS_ROLE:?the serve-pd-bench recipe sets NEXUS_ROLE}"
 : "${JS_NAME:?}" "${RESULT_DIR:?}"
+# Each role is TP32 on one 2x2x4 slice: four hosts, or the engines wait for hosts that never come.
+[ "${NEXUS_HOSTS:-4}" = 4 ] || { echo "role.sh: NEXUS_HOSTS=${NEXUS_HOSTS}; the K3 points need --hosts 4" >&2; exit 2; }
 export K3_PD_CONFIG="k3-repro-1016/${POINT}"
 [ -f "$REPO_DIR/scripts/vllm/benchmarking/configs/${K3_PD_CONFIG}.sh" ] \
   || { echo "role.sh: no such point: $POINT" >&2; exit 2; }
