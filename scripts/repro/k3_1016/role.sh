@@ -164,6 +164,7 @@ case "$ROLE" in
       if [ "$MULTI" = 1 ] && prev=$(earlier_ok "$p"); then
         log "an earlier attempt finished $p green ($prev); keeping its results"
         cp -r "$prev/." "$out/" && echo "$prev" > "$out/RESUMED_FROM"
+        [ ! -f "$out/cdk_points.jsonl" ] || cat "$out/cdk_points.jsonl" >> "$RESULT_DIR/cdk_points.jsonl"
         continue
       fi
       if [ "$first" = 0 ]; then
@@ -184,14 +185,13 @@ case "$ROLE" in
       python3 "$HERE/extract.py" --point "$p" --results "$ARTIFACTS_DIR/k3-agentx-1p1d" --out "$out" \
         || { log "extract.py failed for $p"; [ "$rc" -ne 0 ] || rc=1; }
       [ "$rc" = 0 ] || rc_all=$rc
+      # each point's dash row as soon as it exists: the live dash reads $RESULT_DIR/cdk_points.jsonl while we run
+      if [ "$MULTI" = 1 ] && [ -f "$out/cdk_points.jsonl" ]; then cat "$out/cdk_points.jsonl" >> "$RESULT_DIR/cdk_points.jsonl"; fi
       [ "$rc" != 0 ] || date -u +%FT%TZ > "$out/POINT_OK"
       date -u +%FT%TZ > "$out/POINT_DONE"
       # A point whose servers failed leaves nothing to measure the next point on.
       [ "$rc" = 0 ] || [ "$MULTI" = 0 ] || { log "stopping the batch after $p"; break; }
     done
-    if [ "$MULTI" = 1 ]; then
-      cat "$RESULT_DIR"/points/*/cdk_points.jsonl > "$RESULT_DIR/cdk_points.jsonl" 2>/dev/null
-    fi
     exit "$rc_all"
     ;;
   *)

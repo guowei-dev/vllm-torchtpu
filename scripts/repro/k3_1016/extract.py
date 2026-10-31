@@ -105,9 +105,11 @@ def main() -> int:
     (a.out / "k3r_metrics.json").write_text(json.dumps(m, indent=2) + "\n")
     numeric = {k: v for k, v in m.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
     (a.out / "cdk_result.json").write_text(json.dumps(numeric, indent=2) + "\n")
-    # The run's point for `nexus cdk dash` (one sheet for the whole study).
+    # The run's point for `nexus cdk dash` (one sheet for the whole study). cdk's result-updater files a bench
+    # ending in -c<N> and a `conc` key under c<N>.metrics, so the dash gets `p3` and `concurrency`.
+    dash = {("concurrency" if k == "conc" else k): v for k, v in numeric.items()}
     (a.out / "cdk_points.jsonl").write_text(json.dumps(
-        {"sheet": "k3-1016-repro", "bench": a.point, "metrics": numeric}) + "\n")
+        {"sheet": "k3-1016-repro", "bench": a.point.split("-")[0], "metrics": dash}) + "\n")
     print(json.dumps(m, indent=2))
     return 0
 
