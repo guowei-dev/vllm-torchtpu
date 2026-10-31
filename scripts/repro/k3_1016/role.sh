@@ -52,6 +52,8 @@ export PYTHONUNBUFFERED=1
 # The engines' and the client's command (and the heads' health URLs below),
 # overridable only to rehearse the point loop off-TPU.
 ENGINE_CMD="${K3R_ENGINE_CMD:-bash .buildkite/kubernetes/k3_1p1d.sh}"
+# How often a role relaunches a point's engines that died before the client finished it.
+TRIES="${K3R_ENGINE_TRIES:-3}"
 CLIENT_CMD="${K3R_CLIENT_CMD:-bash .buildkite/kubernetes/k3_agentx_client_pod.sh}"
 # shellcheck source=scripts/repro/k3_1016/profile.sh
 source "$HERE/profile.sh"
@@ -80,6 +82,12 @@ earlier_ok() {
     return 0
   done
   return 1
+}
+
+# role_retry_marker <point> <try>: any host of THIS role asked the role to relaunch <point>'s engines
+# after try <try> failed (written after this pod started).
+role_retry_marker() {
+  find "$(k3r_outputs_root)" -path "*-${ROLE}-0/*/result/ENGINE_RETRY_$1_$2" -newer "$STAMP" 2>/dev/null | head -n 1
 }
 
 # heads_state: "up" when both heads answer /health, "down" when neither does.
@@ -119,28 +127,50 @@ case "$ROLE" in
     for p in "${POINTS[@]}"; do
       if earlier_ok "$p" >/dev/null; then log "an earlier attempt finished $p; skipping it"; continue; fi
       export K3_PD_CONFIG="k3-repro-1016/${p}"
-      log "starting $ROLE for $p"
-      setsid $ENGINE_CMD "$ROLE" &
-      eng=$!
-      while kill -0 "$eng" 2>/dev/null && [ -z "$(point_done_marker "$p")" ]; do sleep 20; done
-      if ! kill -0 "$eng" 2>/dev/null; then
-        wait "$eng"
-        rc=$?
-        # A follower's engine exits when its head was stopped first (each host polls on its own
-        # cycle): if the client's POINT_DONE turns up (gcsfuse lags), that was the hand-over.
-        for _ in 1 2 3 4; do [ -n "$(point_done_marker "$p")" ] && break; sleep 20; done
-        if [ -z "$(point_done_marker "$p")" ]; then
-          log "the $ROLE engine for $p exited (rc=$rc) before the client finished it"
-          exit $(( rc == 0 ? 1 : rc ))
+      try=1
+      while :; do
+        log "starting $ROLE for $p (try $try of $TRIES)"
+        setsid $ENGINE_CMD "$ROLE" &
+        eng=$!
+        while kill -0 "$eng" 2>/dev/null && [ -z "$(point_done_marker "$p")" ] \
+            && [ -z "$(role_retry_marker "$p" "$try")" ]; do sleep 20; done
+        outcome=done
+        if [ -n "$(role_retry_marker "$p" "$try")" ]; then
+          outcome=retry
+        elif ! kill -0 "$eng" 2>/dev/null; then
+          wait "$eng"
+          rc=$?
+          # A follower's engine exits when its head was stopped first (each host polls on its own
+          # cycle): if the client's POINT_DONE or the role's retry turns up (gcsfuse lags), that was it.
+          for _ in 1 2 3 4; do
+            [ -n "$(point_done_marker "$p")" ] && break
+            [ -n "$(role_retry_marker "$p" "$try")" ] && { outcome=retry; break; }
+            sleep 20
+          done
+          if [ "$outcome" = done ] && [ -z "$(point_done_marker "$p")" ]; then
+            log "the $ROLE engine for $p exited (rc=$rc) before the client finished it (try $try of $TRIES)"
+            [ "$try" -lt "$TRIES" ] || exit $(( rc == 0 ? 1 : rc ))
+            # The whole role relaunches: TP32 spans its four hosts, so one host cannot restart alone.
+            # (A TPU "START_SESSION failed" at init struck the same two decode nodes twice.)
+            mkdir -p "$RESULT_DIR" && date -u +%FT%TZ > "$RESULT_DIR/ENGINE_RETRY_${p}_${try}"
+            outcome=retry
+          fi
         fi
-      fi
-      log "the client finished $p; stopping the $ROLE servers (process group $eng)"
-      kill -TERM -- "-$eng" 2>/dev/null
-      for _ in $(seq 60); do kill -0 -- "-$eng" 2>/dev/null || break; sleep 2; done
-      kill -KILL -- "-$eng" 2>/dev/null
-      wait "$eng" 2>/dev/null
-      rm -rf "${K3R_PROFILE_DIR:?}"/* 2>/dev/null
-      sleep 20  # the chips and the ports are free once every process of the group is gone
+        [ "$outcome" = retry ] && log "relaunching the $ROLE servers for $p" \
+          || log "the client finished $p; stopping the $ROLE servers (process group $eng)"
+        kill -TERM -- "-$eng" 2>/dev/null
+        for _ in $(seq 60); do kill -0 -- "-$eng" 2>/dev/null || break; sleep 2; done
+        kill -KILL -- "-$eng" 2>/dev/null
+        wait "$eng" 2>/dev/null
+        rm -rf "${K3R_PROFILE_DIR:?}"/* 2>/dev/null
+        if [ "$outcome" = retry ]; then
+          sleep "${K3R_RETRY_PAUSE:-90}"  # every host of the role is down, and the TPU runtime has settled
+          try=$((try + 1))
+          continue
+        fi
+        sleep 20  # the chips and the ports are free once every process of the group is gone
+        break
+      done
     done
     log "all points served; waiting for the client to finish"
     while sleep 3600; do :; done
