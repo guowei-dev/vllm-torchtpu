@@ -33,6 +33,10 @@ import sys
 from pathlib import Path
 
 CHIPS = 32
+# The doc's points are four configuration families, not one sweep: each family is its own dash sheet (one
+# line per sheet), so points of different families that share a concurrency (p6/p7/p9 at 48) are never joined.
+FAMILY = {"p1": "dspark-dcp32", "p2": "dspark-dcp32", "p3": "dspark-dcp32", "p4": "dspark-dcp32",
+          "p5": "dspark-dcp32", "p6": "dspark-dp2", "p7": "nospec-dp2", "p8": "nospec-dp2", "p9": "nospec-dcp32"}
 
 
 def metric(d: dict, name: str, stat: str = "avg"):
@@ -105,11 +109,12 @@ def main() -> int:
     (a.out / "k3r_metrics.json").write_text(json.dumps(m, indent=2) + "\n")
     numeric = {k: v for k, v in m.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
     (a.out / "cdk_result.json").write_text(json.dumps(numeric, indent=2) + "\n")
-    # The run's point for `nexus cdk dash` (one sheet for the whole study). cdk's result-updater files a bench
+    # The run's point for `nexus cdk dash`, on its family's sheet. cdk's result-updater files a bench
     # ending in -c<N> and a `conc` key under c<N>.metrics, so the dash gets `p3` and `concurrency`.
     dash = {("concurrency" if k == "conc" else k): v for k, v in numeric.items()}
+    bench = a.point.split("-")[0]
     (a.out / "cdk_points.jsonl").write_text(json.dumps(
-        {"sheet": "k3-1016-repro", "bench": a.point.split("-")[0], "metrics": dash}) + "\n")
+        {"sheet": f"repro-{FAMILY.get(bench, 'other')}", "bench": bench, "metrics": dash}) + "\n")
     print(json.dumps(m, indent=2))
     return 0
 
