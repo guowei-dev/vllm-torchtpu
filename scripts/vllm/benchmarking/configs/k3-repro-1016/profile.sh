@@ -18,7 +18,7 @@
 # registers /start_profile and /stop_profile (vllm-rs registers them when
 # --profiler-config names a profiler). Nothing traces until /start_profile, and
 # the TPU worker reads the config only then (worker/tpu_worker.py profile()),
-# so the measured window runs the doc's program; the launcher captures after
+# so the measured window serves main's program; the launcher captures after
 # the window. Engines only: the client sources this for the cases.
 [ "${K3_1P1D_ENGINE:-0}" = 1 ] || return 0
 # Traces small enough to bring back: device and host activity, no Python stacks.

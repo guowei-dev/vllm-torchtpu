@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""One AgentX point's numbers, as the Kimi-K3 1P1D recipe doc defines them.
+"""One Kimi-K3 1P1D AgentX point's numbers, computed from its aiperf artifacts.
 
     agentx_point_metrics.py --config k3-repro-1016/p5-c32 \\
         --results <ARTIFACTS_DIR>/k3-agentx-1p1d --chips 32 --out result.json \\
