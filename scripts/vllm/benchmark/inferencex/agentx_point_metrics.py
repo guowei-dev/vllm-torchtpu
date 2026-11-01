@@ -24,13 +24,16 @@ with '/' as '.' and no trailing -c<N>. P90 interactivity is 1000 / P90
 inter-token latency (ms); per chip divides total tok/s by --chips, the physical
 chips of both roles; the chip and CPU hit rates are the PREFILL's
 prefix_cache_hits and external_prefix_cache_hits over its prefix_cache_queries;
-the acceptance length is the decode's 1 + accepted tokens / drafts.
+the acceptance length is the decode's 1 + accepted tokens / drafts. A metric the
+exports lack is left out of metrics.
 
 --expect scores the point against points[bench][window] of a reference file,
 each gate applying where that window's reference has the metric:
 
     {"gates": {"total_tok_s": {"rel": 0.06}, "chip_hit_pct": {"abs": 3.0}, ...},
      "points": {"k3-repro-1016.p5": {"3600": {"total_tok_s": <ref>, ...}}}}
+
+A gated metric the run lacks fails; a rel gate on a zero reference passes only 0.
 
 Exit 1 when the run has not exactly one concurrency, errors, was cancelled or
 completed no request, or a gate fails; 3 when no reference covers the window.
@@ -103,7 +106,11 @@ def score(metrics: dict, expected: dict, bench: str, window: int) -> dict:
             print(f"FAIL {name}: absent, reference {want}")
             gates[name] = {"value": None, "ref": want, "ok": False}
             continue
-        miss = (value - want) / want if kind == "rel" else value - want
+        miss = value - want
+        if kind == "rel" and want:
+            miss /= want
+        elif kind == "rel" and miss:
+            miss = float("inf")
         ok = abs(miss) <= band
         shown = f"{miss:+.2%}" if kind == "rel" else f"{miss:+.2f}"
         verdict = "PASS" if ok else "FAIL"
@@ -132,6 +139,8 @@ def main() -> int:
     art = concs[0].parent
     d = json.loads(concs[0].read_text())
     itl_p90 = stat(d, "inter_token_latency", "p90")
+    ttft_p90 = stat(d, "time_to_first_token", "p90")
+    ttft_p50 = stat(d, "time_to_first_token", "p50")
     total = stat(d, "total_token_throughput")
     errors = d.get("error_summary") or []
     m = {
@@ -140,8 +149,8 @@ def main() -> int:
         "tok_s_per_chip": total / a.chips if total else None,
         "interactivity_p90": 1000 / itl_p90 if itl_p90 else None,
         "itl_p90_ms": itl_p90,
-        "ttft_p90_s": (stat(d, "time_to_first_token", "p90") or 0) / 1000,
-        "ttft_p50_s": (stat(d, "time_to_first_token", "p50") or 0) / 1000,
+        "ttft_p90_s": ttft_p90 / 1000 if ttft_p90 is not None else None,
+        "ttft_p50_s": ttft_p50 / 1000 if ttft_p50 is not None else None,
         "output_tok_s": stat(d, "output_token_throughput"),
         "input_tok_s": stat(d, "input_token_throughput"),
         "requests": stat(d, "request_count"),

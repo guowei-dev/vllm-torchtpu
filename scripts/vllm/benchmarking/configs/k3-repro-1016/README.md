@@ -82,8 +82,8 @@ inter-token latency in ms), `itl_p90_ms`, `ttft_p90_s`, `ttft_p50_s`,
 `theoretical_hit_pct`, `chip_hit_pct` and `cpu_hit_pct` (the prefill's
 `prefix_cache_hits` and `external_prefix_cache_hits` over its
 `prefix_cache_queries`), `decode_acceptance_length` (1 + accepted / drafts) and
-`errors`. The client fails on errors, a cancelled run, no request, or other than
-one concurrency. `--expect <file> --window <s>` scores a run against reference
+`errors`; a metric the exports lack is left out. The client fails on errors, a
+cancelled run, no request, or other than one concurrency. `--expect <file> --window <s>` scores a run against reference
 numbers and gates (format in the script's docstring): exit 1 on a miss, 3 when the
 file has no reference for that window.
 
