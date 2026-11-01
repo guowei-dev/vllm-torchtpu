@@ -4371,6 +4371,8 @@ def mla(
     dcp_attention = mla_dcp.DcpAttention(*dcp, position_ref, batch_size, sequence_rows=sequence_rows,
                                          skip=dcp_skip,
                                          cache_verify_rows=sequence_rows > 1 and dcp[0].dtype == jnp.float8_e4m3fn)
+    if PHASE_SCOPES:
+        dcp_attention.trace = "a_"
     dcp_attention.prime()
 
     if "query_down" in streams:
@@ -4582,6 +4584,8 @@ def mla_dcp_shards(
         start_copy(name)
     dcp_attention = mla_dcp.DcpAttention(*dcp, position_ref, rows, skip=_config().dcp_skip, heads=3 * shards,
                                          sequence_rows=sequence_rows)
+    if PHASE_SCOPES:
+        dcp_attention.trace = "a_"
     dcp_attention.prime()
     scope = _phase_start("q6_mla_projections")
     if "query_down" in streams:
