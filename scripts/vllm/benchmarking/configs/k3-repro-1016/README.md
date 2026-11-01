@@ -31,9 +31,11 @@ one point per job. It maps a neutral environment onto main's lane
 | `PD_CHIPS` | physical chips of both roles, what per-chip throughput divides by |
 | `JS_NAME` | the JobSet; host `i` of role `r` is `<JS_NAME>-<r>-0-<i>.<JS_NAME>` |
 | `POD_IP`, `JOB_COMPLETION_INDEX` | the engine's address and host index |
+| `TPU_TOPOLOGY` | the engine's slice, `2x2x4` for these points; GKE sets it on a TPU pod |
+| `TPU_ACCELERATOR_TYPE` | `tpu7x` on the engines, set by the adapter over GKE's `tpu7x-32`, as main's lane sets it |
 | `PD_IMAGE` | the engine image reference; keys the compilation caches |
 | `PD_RUN_ENV_KEYS` | comma list of the run factors the job sets (below) |
-| `PD_OUT` | where the client writes; default `$CDK_OUTPUT_DIR` |
+| `PD_OUT` | where the client writes; default `$CDK_OUTPUT_DIR`, else the repo root, which is lost with the pod: set it off cdk |
 
 Engines serve until the JobSet ends and never exit on success. The client writes
 `$PD_OUT/perf_eval_results/k3-agentx-1p1d/` (aiperf's artifacts) and
@@ -62,13 +64,17 @@ config file: copy the point and change one `RECIPE_*` before it sources
 
 | Path | Content |
 |---|---|
-| `/ckpt/k3` | `moonshotai/Kimi-K3`, revision `9f62e4e9` |
-| `/cache/hf/hub/presharded/kimi-k3-tp32` | the TP32 pre-shard (1.55 TiB): `python -m tools.megakernel preshard k3`, `prefill` and `dspark` at vllm-torchtpu `3af67bd47`, from the checkpoint and the draft |
+| `/ckpt/k3` | `moonshotai/Kimi-K3`, revision `9f62e4e9fffbd0a83ddd60e1c209d828994b3569` |
+| `/cache/hf/hub/presharded/kimi-k3-tp32` | the TP32 pre-shard of the checkpoint and the draft (1.55 TiB), an opaque input checked at boot (below) |
 | `/cache/hf/hub/models--Inferact--Kimi-K3-DSpark` | `Inferact/Kimi-K3-DSpark`, snapshot `cf6b8244620e7ea4b0651d214f28e89eac75bed6` |
 
 `k3_1p1d.sh` refuses to boot without `config.json`, the pre-shard's `layout.json`,
 `prefill-sp-cache/layout.json` and, on a DSpark point, the draft's `config.json` and
-the pre-shard's `dspark-cf6b8244`. The client
+the pre-shard's `dspark-cf6b8244`; it checks only that they exist, and the pre-shard
+is used as found. As historical provenance only, it was built by
+`python -m tools.megakernel preshard k3`, `prefill` and `dspark` at vllm-torchtpu
+`3af67bd470ea59f64c3e043a9d0f322c8759a12b`, a commit on vllm-project/vllm-torchtpu's
+branch `tmp/k3-preshard`, not on main. The client
 fetches its tokenizer (`moonshotai/Kimi-K3`) and the trace corpus from the Hub at
 `main`, unpinned; `result.json` records what it got under `info.hf_revisions`.
 
@@ -95,7 +101,7 @@ command and its environment when `K3_1P1D_DRY_RUN=1` (the role's hosts must reso
     docker run --rm --entrypoint bash -w /workspace/vllm-torchtpu \
       -v "$PWD:/workspace/vllm-torchtpu:ro" -e K3_1P1D_DRY_RUN=1 \
       -e PD_ROLE=decode -e PD_CONFIG=k3-repro-1016/p5-c32 -e PD_HOSTS=4 -e PD_CHIPS=32 \
-      -e JS_NAME=js -e POD_IP=10.0.0.10 -e TPU_TOPOLOGY=2x2x4 -e TPU_ACCELERATOR_TYPE=tpu7x \
+      -e JS_NAME=js -e POD_IP=10.0.0.10 -e TPU_TOPOLOGY=2x2x4 \
       --add-host js-prefill-0-0.js:10.0.0.20 --add-host js-decode-0-1.js:10.0.0.11 \
       --add-host js-decode-0-2.js:10.0.0.12 --add-host js-decode-0-3.js:10.0.0.13 \
       <image> .buildkite/kubernetes/pd_role.sh
