@@ -101,7 +101,8 @@ def decode(path):
     steps = []
     for i, (s, e, rows) in enumerate(stacks):
         nxt = stacks[i + 1][0] if i + 1 < len(stacks) else None
-        slot = next((n for t, n in drafts if s <= t and (nxt is None or t < nxt)), None)
+        # the draft runs in ceil(R / 64) chunks (draft_mla.py:53), one call each: the step's slots are their sum
+        slot = sum(n for t, n in drafts if s <= t and (nxt is None or t < nxt)) or None
         step = {"start_ns": s, "stack_us": (e - s) / 1e3, "rows": rows, "slots": slot or rows}
         if nxt is not None:
             busy = _union([(max(a, s), min(b, nxt)) for a, b in modules if b > s and a < nxt])
