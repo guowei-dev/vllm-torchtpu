@@ -308,6 +308,29 @@ def run_decode(args, records: harness.Records) -> None:
     harness.log("summary: " + "; ".join(f"B{b}@{c}={ms:.2f}ms" for b, c, ms in results))
 
 
+def _fingerprint(root, tag, tokens, tensors) -> None:
+    """sha256 of the case's last-step tokens and of every pool tensor (all layers'
+    latent pages and KDA states), one JSON line per case and rank: equal code on
+    equal inputs gives equal bytes."""
+    import hashlib
+    import json
+
+    import torch
+
+    def digest(t):
+        return hashlib.sha256(
+            t.detach().cpu().contiguous().view(torch.uint8).numpy().tobytes()
+        ).hexdigest()
+
+    line = {"case": tag, "tokens": digest(tokens)}
+    line.update({f"pool{i:02d}": digest(t) for i, t in enumerate(tensors)})
+    os.makedirs(root, exist_ok=True)
+    with open(
+        os.path.join(root, f"rank{torch.distributed.get_rank():02d}.jsonl"), "a"
+    ) as f:
+        f.write(json.dumps(line) + "\n")
+
+
 def run_prefill(args, records: harness.Records) -> None:
     import torch
 
@@ -419,10 +442,15 @@ def run_prefill(args, records: harness.Records) -> None:
             ]
             with _trace(args.trace, tag, repeat == args.repeats):
                 started = time.perf_counter()
-                bridge.materialize(prefiller.step(mk.StepInput(rows)).tokens)
+                tokens = prefiller.step(mk.StepInput(rows)).tokens
+                bridge.materialize(tokens)
                 elapsed = 1e3 * (time.perf_counter() - started)
             if repeat:
                 times.append(elapsed)
+        if os.environ.get(
+            "K3KH_FP"
+        ):  # exp-only (never in a PR): whole-model fingerprint of this case
+            _fingerprint(os.environ["K3KH_FP"], tag, tokens, pools.tensors)
         ms = statistics.median(times)
         rate = length * count * 1e3 / ms
         on_prefix = f" on a {prefix} prefix" if prefix else ""
