@@ -11,7 +11,7 @@ It feeds the roofline / headroom study in dev_nexus `project/k3-roofline/artifac
 |---|---|
 | `prefill`, `decode` | `.buildkite/kubernetes/pd_role.sh`, unchanged, plus (in a wrapped pod) a detached watcher that copies each window's traces to `result/profile/<slot>/w<n>/` |
 | `client` | `pd_role.sh client` (the lane's AgentX client) in the background; `capture.sh` waits for aiperf's `Phase profiling (profiling) started`, then opens windows; the client is stopped once enough windows are accepted |
-| `check` | `pd_role.sh`'s run-factor check (the same four factors) |
+| `check` | the run-factor check, with `pd_role.sh`'s four factors |
 
 ## A window
 

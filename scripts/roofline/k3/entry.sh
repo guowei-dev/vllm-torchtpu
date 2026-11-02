@@ -16,15 +16,23 @@
 # The ENTRY of a Kimi-K3 roofline capture slot (cdk recipe vllm-torchtpu-pd-bench; see README.md here).
 # Engines are the lane adapter's, unchanged (pd_role.sh), plus a watcher that copies each window's traces out;
 # the client drives the point's own AgentX load and captures inside its profiling phase (capture.sh), scoring
-# nothing. PD_ROLE=check is the adapter's own run-factor check.
+# nothing. PD_ROLE=check validates the run factors (the adapter's four) and exits.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$HERE/../../.." && pwd)"
 ADAPTER="$REPO_DIR/.buildkite/kubernetes/pd_role.sh"
 role="${PD_ROLE:?}"
+# The lane adapter's run factors, the same four (the check runs this file alone, without the repo).
+keys="${PD_RUN_ENV_KEYS:-}"
+for key in ${keys//,/ }; do
+  case "$key" in
+    AGENTX_DURATION | AGENTX_FAST | AGENTX_SKIP_POST_EVAL | AGENTX_READY_WAIT_MIN) ;;
+    *) echo "entry.sh: $key is not a run factor; change the server in a config file" >&2; exit 2 ;;
+  esac
+done
 case "$role" in
   check)
-    exec bash "$ADAPTER"
+    exit 0
     ;;
   prefill | decode)
     # Only in a wrapped pod (the wrapper names the slot's resolved dir and the outputs bucket is mounted); detached,
