@@ -124,18 +124,21 @@ def build_program(vllm_config: Any, tp_rank: int) -> MegakernelProgram:
     moe_reduce_dtype = tpu_envs.TPU_K3_MOE_REDUCE_DTYPE
     if config.attention_dp > 1:
         k3.check(config)
+    fields = {}
     if config.attention_dp > 1 or moe_reduce_dtype != "float32":
+        fields.update(
+            attention_dp=config.attention_dp,
+            dcp_group=config.decode_context_parallel_size,
+            moe_reduce_dtype=moe_reduce_dtype,
+        )
+    if tpu_envs.TPU_K3_PHASE_SCOPES and config.role == "decode":
+        fields["phase_scopes"] = True
+    if fields:
         from vllm_torchtpu.megakernel.kimi_k3 import config as kernel_config
 
         # Kernel modules read the config at import: install it before the
         # program imports them.
-        kernel_config.install(
-            kernel_config.KernelConfig(
-                attention_dp=config.attention_dp,
-                dcp_group=config.decode_context_parallel_size,
-                moe_reduce_dtype=moe_reduce_dtype,
-            )
-        )
+        kernel_config.install(kernel_config.KernelConfig(**fields))
     # The prefill computes the rings of its loader config's draft; the
     # decoder drafts with the speculative config's model (and imports rings).
     if config.role == "prefill":
