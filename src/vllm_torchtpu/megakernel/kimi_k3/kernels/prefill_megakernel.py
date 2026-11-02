@@ -53,9 +53,9 @@ the header); the TP32 rings from ``vllm_torchtpu.kernels.kimi_k3.collectives``.
 
 from __future__ import annotations
 
-import os
 import dataclasses
 import functools
+import os
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from collections.abc import Callable
@@ -3465,11 +3465,14 @@ def _flash_kernel_packed(length_ref, segment_ref, *refs, tile, q_tile, count, pr
     sequence return zero and their values are zeroed. The window is a
     one-layer arena (keys ``[1, 3, T, 256]``, values transposed
     ``[1, 3, 128, T]``). Offsets are multiples of 256."""
+    # exp-only A/B knob (never in a PR): K3KH_BASE=flash allocates no state scratch (base fori carry)
+    if _flash_base():
+        refs = (*refs, None, None)
     if prefixed:
         layer_ref, q_ref, k_hbm, v_hbm, prefix_k_hbm, prefix_v_hbm, out_ref, k_buf, v_buf, sems, acc_ref, max_ref = refs
     else:
         q_ref, k_hbm, v_hbm, out_ref, k_buf, v_buf, sems, acc_ref, max_ref = refs
-    state = (max_ref, acc_ref)
+    state = None if _flash_base() else (max_ref, acc_ref)
     head, query_block = pl.program_id(0), pl.program_id(1)
     length = length_ref[0]
     offsets = [segment_ref[s] for s in range(count)]
@@ -3606,6 +3609,10 @@ _ONES = 8
 STALE_LIMIT = 64.0
 
 
+def _flash_base():
+    return "flash" in os.environ.get("K3KH_BASE", "").split(",")
+
+
 def _key_loop(carry, lo, hi, *, q, layer, head, k_hbm, v_hbm, k_buf, v_buf, sems, tile, state, mask=None,
               value_mask=None, streamed=False):
     """Fold key blocks ``[lo, hi)`` of arena layer ``layer`` (keys
@@ -3663,6 +3670,22 @@ def _key_loop(carry, lo, hi, *, q, layer, head, k_hbm, v_hbm, k_buf, v_buf, sems
 
     if not streamed:
         return exact(carry)
+
+    if state is None:
+
+        def stream(c):
+            def body(key_block, state):
+                c, worst = state
+                c, gap = _stale_step(q, *block(key_block), c)
+                return c, jnp.maximum(worst, gap)
+
+            prime()
+            first = step(lo, c)
+            worst = jnp.full(c[0].shape, -jnp.inf, jnp.float32)
+            result, worst = jax.lax.fori_loop(lo + 1, hi, body, (first, worst))
+            return jax.lax.cond(jnp.max(worst) > STALE_LIMIT, exact, lambda _: result, c)
+
+        return jax.lax.cond(lo < hi, stream, lambda c: c, carry)
 
     max_ref, acc_ref = state
 
@@ -4092,8 +4115,8 @@ def mla_flash_prefill_packed(query, key, value, length, segments, *, count, tile
                 pltpu.VMEM((2, k_tile, 256), jnp.bfloat16),
                 pltpu.VMEM((2, 128, k_tile), jnp.bfloat16),
                 pltpu.SemaphoreType.DMA((2, 2)),
-                pltpu.VMEM((128 + _ONES, q_tile), jnp.float32),
-                pltpu.VMEM((1, q_tile), jnp.float32),
+                *(() if _flash_base() else (pltpu.VMEM((128 + _ONES, q_tile), jnp.float32),
+                                             pltpu.VMEM((1, q_tile), jnp.float32))),
             ),
         ),
         compiler_params=pltpu.CompilerParams(
