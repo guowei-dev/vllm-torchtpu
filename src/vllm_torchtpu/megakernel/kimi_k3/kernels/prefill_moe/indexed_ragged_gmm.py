@@ -3,6 +3,7 @@
 """Indexed activation loads into the ragged GMM pipeline."""
 
 import dataclasses
+import os
 
 import jax
 import jax.numpy as jnp
@@ -84,6 +85,18 @@ def indexed_gate_up(latent, indices, rhs, sizes, scales, layer):
 
         def start(g, bank):
             begin, nrows = bounds(g)
+
+            # exp-only A/B knob (never in a PR): K3KH_BASE=gu traces the base one-row loop
+            if "gu" in os.environ.get("K3KH_BASE", "").split(","):
+
+                @pl.loop(0, nrows)
+                def row(i):
+                    source = idx[begin + i]
+                    pltpu.make_async_copy(
+                        x.at[pl.ds(source, 1)], acts.at[bank, pl.ds(i, 1)], sems.at[bank]
+                    ).start()
+
+                return
 
             # bounds() aligns both ends to sub, so each iteration issues sub row copies
             @pl.loop(0, nrows // sub)
