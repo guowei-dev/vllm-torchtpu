@@ -53,6 +53,7 @@ the header); the TP32 rings from ``vllm_torchtpu.kernels.kimi_k3.collectives``.
 
 from __future__ import annotations
 
+import os
 import dataclasses
 import functools
 from abc import ABC, abstractmethod
@@ -3306,6 +3307,32 @@ def kda_prefill_tiled_body(
             )
         filtered = jax.nn.silu(convolved).astype(jnp.bfloat16)
         filtered = _row_where(real_rows, filtered)
+        # exp-only A/B knob (never in a PR): K3KH_BASE=kda carries the history at its base position
+        base_carry = "kda" in os.environ.get("K3KH_BASE", "").split(",")
+
+        def carry_history():
+            # The history starts at the end of the real prefix. Mosaic does not
+            # lower dynamic_slice on a value, so only the one partial tile uses a
+            # masked reduction; full tiles use a static slice.
+            real_count = jnp.clip(row_end - t * tile, 0, tile)
+
+            @pl.when(real_count == tile)
+            def carry_full_tile():
+                conv_hist_vmem[...] = window[tile : tile + 3]
+
+            @pl.when((real_count > 0) & (real_count < tile))
+            def carry_partial_tile():
+                rows = jnp.arange(tile + 3, dtype=jnp.int32)
+                picked = []
+                for i in range(3):
+                    picked.append(
+                        jnp.sum(_row_where(rows == real_count + i, window), axis=0)
+                    )
+                conv_hist_vmem[...] = jnp.stack(picked)
+
+        if base_carry:
+            carry_history()
+
         query = filtered[:, 0].astype(jnp.float32)
         key = filtered[:, 1].astype(jnp.float32)
         value = filtered[:, 2].astype(jnp.float32)
@@ -3345,24 +3372,8 @@ def kda_prefill_tiled_body(
             ).astype(jnp.bfloat16)
 
         # Carried after the o-proj so the tile's compute stays one basic block.
-        # The history starts at the end of the real prefix. Mosaic does not
-        # lower dynamic_slice on a value, so only the one partial tile uses a
-        # masked reduction; full tiles use a static slice.
-        real_count = jnp.clip(row_end - t * tile, 0, tile)
-
-        @pl.when(real_count == tile)
-        def carry_full_tile():
-            conv_hist_vmem[...] = window[tile : tile + 3]
-
-        @pl.when((real_count > 0) & (real_count < tile))
-        def carry_partial_tile():
-            rows = jnp.arange(tile + 3, dtype=jnp.int32)
-            picked = []
-            for i in range(3):
-                picked.append(
-                    jnp.sum(_row_where(rows == real_count + i, window), axis=0)
-                )
-            conv_hist_vmem[...] = jnp.stack(picked)
+        if not base_carry:
+            carry_history()
 
         pl.when((segment >= 0) & (position > 0)
                 & ((t + 1) * tile == offset + position))(
