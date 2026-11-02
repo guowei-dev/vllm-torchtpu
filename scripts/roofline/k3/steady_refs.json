@@ -1,0 +1,618 @@
+{
+ "built_by": "dev_nexus project/k3-roofline/artifact/roofline/capture/build_steady_refs.py",
+ "points": {
+  "p1-c1": {
+   "concurrency": 1,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0047,
+     "max": 0.0207,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0113,
+     "p90": 0.0157
+    },
+    "num_requests_running": {
+     "avg": 0.3824,
+     "max": 1.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 1.0,
+     "p90": 1.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.0301,
+     "max": 2.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0008,
+     "max": 0.0276,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    },
+    "num_requests_running": {
+     "avg": 0.0326,
+     "max": 3.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.0001,
+     "max": 1.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261030-225813-p1-c1/perf_eval_results/k3-agentx-1p1d/conc_1/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p2-c4": {
+   "concurrency": 4,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0068,
+     "max": 0.0344,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0034,
+     "p75": 0.0103,
+     "p90": 0.0207
+    },
+    "num_requests_running": {
+     "avg": 0.6545,
+     "max": 2.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 1.0,
+     "p75": 1.0,
+     "p90": 2.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.0706,
+     "max": 3.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0013,
+     "max": 0.0536,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0049
+    },
+    "num_requests_running": {
+     "avg": 0.0554,
+     "max": 2.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.0034,
+     "max": 1.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-002542-batch-p2-p5/points/p2-c4/perf_eval_results/k3-agentx-1p1d/conc_4/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p3-c8": {
+   "concurrency": 8,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0132,
+     "max": 0.064,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0034,
+     "p50": 0.0113,
+     "p75": 0.0217,
+     "p90": 0.029
+    },
+    "num_requests_running": {
+     "avg": 1.5784,
+     "max": 8.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 1.0,
+     "p50": 1.0,
+     "p75": 2.0,
+     "p90": 3.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.0305,
+     "max": 1.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0018,
+     "max": 0.0669,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0074
+    },
+    "num_requests_running": {
+     "avg": 0.1174,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 1.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.0068,
+     "max": 2.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-002542-batch-p2-p5/points/p3-c8/perf_eval_results/k3-agentx-1p1d/conc_8/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p4-c16": {
+   "concurrency": 16,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0295,
+     "max": 0.0994,
+     "min": 0.0,
+     "p10": 0.0044,
+     "p25": 0.0138,
+     "p50": 0.0271,
+     "p75": 0.0433,
+     "p90": 0.0576
+    },
+    "num_requests_running": {
+     "avg": 3.6654,
+     "max": 8.0,
+     "min": 0.0,
+     "p10": 1.0,
+     "p25": 2.0,
+     "p50": 4.0,
+     "p75": 5.0,
+     "p90": 7.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.1425,
+     "max": 5.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0042,
+     "max": 0.1058,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0054,
+     "p90": 0.0138
+    },
+    "num_requests_running": {
+     "avg": 0.2513,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 1.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.0933,
+     "max": 9.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-002542-batch-p2-p5/points/p4-c16/perf_eval_results/k3-agentx-1p1d/conc_16/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p5-c32": {
+   "concurrency": 32,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0608,
+     "max": 0.1366,
+     "min": 0.0,
+     "p10": 0.0244,
+     "p25": 0.0462,
+     "p50": 0.0633,
+     "p75": 0.0769,
+     "p90": 0.0895
+    },
+    "num_requests_running": {
+     "avg": 11.1704,
+     "max": 16.0,
+     "min": 0.0,
+     "p10": 6.0,
+     "p25": 9.0,
+     "p50": 12.0,
+     "p75": 14.0,
+     "p90": 16.0
+    },
+    "num_requests_waiting": {
+     "avg": 1.3228,
+     "max": 21.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 1.0,
+     "p90": 4.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0125,
+     "max": 0.1349,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0028,
+     "p75": 0.0169,
+     "p90": 0.0395
+    },
+    "num_requests_running": {
+     "avg": 0.5747,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 1.0,
+     "p90": 2.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.1368,
+     "max": 16.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-002542-batch-p2-p5/points/p5-c32/perf_eval_results/k3-agentx-1p1d/conc_32/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p6-c48": {
+   "concurrency": 48,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.1029,
+     "max": 0.1965,
+     "min": 0.0,
+     "p10": 0.062,
+     "p25": 0.0895,
+     "p50": 0.1081,
+     "p75": 0.1251,
+     "p90": 0.1402
+    },
+    "num_requests_running": {
+     "avg": 23.1966,
+     "max": 32.0,
+     "min": 0.0,
+     "p10": 13.0,
+     "p25": 20.0,
+     "p50": 24.0,
+     "p75": 29.0,
+     "p90": 31.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.7437,
+     "max": 12.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 1.0,
+     "p90": 2.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0164,
+     "max": 0.1469,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0089,
+     "p75": 0.0243,
+     "p90": 0.0439
+    },
+    "num_requests_running": {
+     "avg": 0.8765,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 1.0,
+     "p75": 1.0,
+     "p90": 3.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.5259,
+     "max": 24.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-212809-batch-p6-p9/points/p6-c48/perf_eval_results/k3-agentx-1p1d/conc_48/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p7-c48": {
+   "concurrency": 48,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.102,
+     "max": 0.1685,
+     "min": 0.0,
+     "p10": 0.0534,
+     "p25": 0.0935,
+     "p50": 0.11,
+     "p75": 0.1223,
+     "p90": 0.1327
+    },
+    "num_requests_running": {
+     "avg": 26.8943,
+     "max": 46.0,
+     "min": 0.0,
+     "p10": 15.0,
+     "p25": 24.0,
+     "p50": 28.0,
+     "p75": 32.0,
+     "p90": 36.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.1775,
+     "max": 9.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 1.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.009,
+     "max": 0.1203,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.003,
+     "p75": 0.0127,
+     "p90": 0.0263
+    },
+    "num_requests_running": {
+     "avg": 0.7161,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 1.0,
+     "p90": 2.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.2984,
+     "max": 22.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-212809-batch-p6-p9/points/p7-c48/perf_eval_results/k3-agentx-1p1d/conc_48/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p8-c72": {
+   "concurrency": 72,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.1799,
+     "max": 0.2763,
+     "min": 0.0,
+     "p10": 0.0954,
+     "p25": 0.1717,
+     "p50": 0.1951,
+     "p75": 0.2141,
+     "p90": 0.23
+    },
+    "num_requests_running": {
+     "avg": 56.0452,
+     "max": 88.0,
+     "min": 0.0,
+     "p10": 26.0,
+     "p25": 50.0,
+     "p50": 60.0,
+     "p75": 69.0,
+     "p90": 75.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.278,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 1.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.0176,
+     "max": 0.2152,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.01,
+     "p75": 0.0243,
+     "p90": 0.0414
+    },
+    "num_requests_running": {
+     "avg": 1.3369,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 1.0,
+     "p75": 2.0,
+     "p90": 3.0
+    },
+    "num_requests_waiting": {
+     "avg": 1.7479,
+     "max": 38.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 6.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-212809-batch-p6-p9/points/p8-c72/perf_eval_results/k3-agentx-1p1d/conc_72/aiperf_artifacts/server_metrics_export.csv"
+  },
+  "p9-c48": {
+   "concurrency": 48,
+   "decode": {
+    "kv_cache_usage_perc": {
+     "avg": 0.1111,
+     "max": 0.179,
+     "min": 0.0,
+     "p10": 0.0628,
+     "p25": 0.1023,
+     "p50": 0.1201,
+     "p75": 0.1332,
+     "p90": 0.1432
+    },
+    "num_requests_running": {
+     "avg": 29.2981,
+     "max": 49.0,
+     "min": 0.0,
+     "p10": 17.0,
+     "p25": 26.0,
+     "p50": 30.0,
+     "p75": 35.0,
+     "p90": 38.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.113,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 1.0
+    }
+   },
+   "prefill": {
+    "kv_cache_usage_perc": {
+     "avg": 0.007,
+     "max": 0.1009,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0093,
+     "p90": 0.0217
+    },
+    "num_requests_running": {
+     "avg": 0.6201,
+     "max": 4.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 1.0,
+     "p90": 2.0
+    },
+    "num_requests_waiting": {
+     "avg": 0.155,
+     "max": 22.0,
+     "min": 0.0,
+     "p10": 0.0,
+     "p25": 0.0,
+     "p50": 0.0,
+     "p75": 0.0,
+     "p90": 0.0
+    }
+   },
+   "source": "project/k3-1016-repro/runs/20261031-212809-batch-p6-p9/points/p9-c48/perf_eval_results/k3-agentx-1p1d/conc_48/aiperf_artifacts/server_metrics_export.csv"
+  }
+ },
+ "what": "golden steady state per point: engine gauges over the AgentX profiling phase (3600 s)"
+}
