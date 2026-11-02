@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     TPU_RAIDEN_GLM_ADMISSION: bool = False
     TPU_RAIDEN_DSV4_ADMISSION: bool = False
     TPU_K3_MOE_REDUCE_DTYPE: str = "float32"
+    TPU_K3_PHASE_SCOPES: bool = False
     TPU_KV_RESHARD_TRANSPORT: str = "zmq"
     TPU_RAIDEN_CONTROLLER_ADDRESS: str = ""
     TPU_RAIDEN_JOB_NAME: str = ""
@@ -466,6 +467,8 @@ environment_variables: dict[str, Callable[[], Any]] = {
     # Running sum dtype of both Kimi-K3 prefill MoE reduce-scatter rings:
     # float32 (default) or bfloat16, which halves ring bytes but rounds every hop.
     "TPU_K3_MOE_REDUCE_DTYPE": env_str("TPU_K3_MOE_REDUCE_DTYPE", "float32"),
+    # Named phase scopes in the Kimi-K3 decode megakernel (XProf region traces; diagnostic).
+    "TPU_K3_PHASE_SCOPES": env_bool("TPU_K3_PHASE_SCOPES"),
     # Controller-driven PCP->DP pool resharding. The default preserves
     # the existing v1 connector protocol; selecting ``raiden`` enables
     # the fail-closed controller path.
