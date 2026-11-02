@@ -186,7 +186,9 @@ doc = {"window": "$wdir", "kind": "$kind", "slot": "$K3CAP_SLOT", "point": "$K3C
        "http": {"start": "$start_codes", "stop": "$stop_codes"},
        "uploads": {"hosts": $up, "want": $K3CAP_HOSTS2}, "rank0": {"decode": "$dx", "prefill": "$px"},
        "check": check}
-gate_ok = doc["gate"]["in_band"] and (doc["gate"]["decode_running_after"] or 0) >= $K3CAP_LO
+# mid, not after: /stop_profile writes every rank's trace (30-75 s) and the engines stall meanwhile, so the
+# gauge read after it measures the capture's own perturbation, not the window
+gate_ok = doc["gate"]["in_band"] and (doc["gate"]["decode_running_mid"] or 0) >= $K3CAP_LO
 ok = doc["http"]["start"] == "200/200" and doc["http"]["stop"] == "200/200" and $up >= $K3CAP_HOSTS2
 doc["accepted_decode"] = bool(ok and gate_ok and check.get("decode_ok")) if "$kind" == "decode" else False
 doc["accepted_prefill"] = bool(ok and check.get("prefill_ok"))

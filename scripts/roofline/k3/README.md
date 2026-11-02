@@ -24,7 +24,7 @@ It feeds the roofline / headroom study in dev_nexus `project/k3-roofline/artifac
 4. `check.py` reads both heads' rank-0 xplanes here (jaxlib `ProfileData`, CPU): decode steps (each
    `kimi_decoder_stack` launch), rows and request slots per step from the op shapes, period / device busy / device
    idle per step; prefill forwards (MLA prefill calls / 24) and busy fraction. A decode window is accepted when the gate
-   held before it, the decode still ran ≥ the band's floor after it, both heads answered 200, every host uploaded and
+   held before it, the decode still ran ≥ the band's floor in the middle of it (not after it: `/stop_profile` stalls the engines while every rank writes its trace, 30–75 s), both heads answered 200, every host uploaded and
    the trace holds ≥ 20 steps. Two accepted decode windows (≤ 5 attempts), ≥ 300 s apart; then up to three
    prefill-gated windows if none held a prefill forward.
 
