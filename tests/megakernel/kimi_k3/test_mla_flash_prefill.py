@@ -62,6 +62,7 @@ def test_flash_prefill_matches_float32_reference(
         "pallas_call",
         functools.partial(pl.pallas_call, interpret=pltpu.InterpretParams()),
     )
+    # Pinned: config.active() would install the default config process-wide.
     tiles = config.KernelConfig(mla_flash_qtile=1024, mla_flash_ktile=2048)
     monkeypatch.setattr(kernels, "_config", lambda: tiles)
     rng = np.random.default_rng(2825)
